@@ -225,7 +225,7 @@ async def process_confirm(call: types.CallbackQuery, state: FSMContext):
                 msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nYosh: {data['age']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}\nMurojaat: {data['desc']}"
                 await bot.send_photo(BOT_GROUP, open(unique_name, 'rb'), msg)
                 # client
-                await bot.send_message(call.from_user.id, "🥳 Muvaffaqiyatli yuborildi !!!", reply_markup=markup)
+                await bot.send_message(call.from_user.id, "🥳 Ma'lumotlaringiz muvaffaqiyatli yuborildi, tez orada siz bilan bog'lanamiz !!!", reply_markup=markup)
                 if os.path.exists(unique_name):
                     os.remove(unique_name)
                 await state.finish()
@@ -239,7 +239,7 @@ async def process_confirm(call: types.CallbackQuery, state: FSMContext):
                 msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nYosh: {data['age']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}\nMurojaat: {data['desc']}"
                 await bot.send_video(BOT_GROUP, open(unique_name, 'rb'), msg)
                 # client
-                await bot.send_message(call.from_user.id, "🥳 Muvaffaqiyatli yuborildi !!!", reply_markup=markup)
+                await bot.send_message(call.from_user.id, "🥳 Ma'lumotlaringiz muvaffaqiyatli yuborildi, tez orada siz bilan bog'lanamiz !!!", reply_markup=markup)
                 # finish
                 if os.path.exists(unique_name):
                     os.remove(unique_name)
@@ -249,7 +249,7 @@ async def process_confirm(call: types.CallbackQuery, state: FSMContext):
                 msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nYosh: {data['age']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}\nMurojaat: {data['desc']}"
                 await bot.send_message(BOT_GROUP, msg)
                 # client
-                await bot.send_message(call.from_user.id, "🥳 Muvaffaqiyatli yuborildi !!!", reply_markup=markup)
+                await bot.send_message(call.from_user.id, "🥳 Ma'lumotlaringiz muvaffaqiyatli yuborildi, tez orada siz bilan bog'lanamiz !!!", reply_markup=markup)
                 # finish
                 await state.finish()
 
