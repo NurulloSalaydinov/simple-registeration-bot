@@ -139,10 +139,10 @@ async def process_desc(message: types.Message, state: FSMContext):
         data['desc'] = message.text
 
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    button = types.KeyboardButton(text='Rasm yoki Video yoq 🚫')
+    button = types.KeyboardButton(text='Foto yoki video mavjud emas')
     markup.add(button)
     await Form.next()
-    await message.reply("📸Rasm yoki 🎞Video yuklang", reply_markup=markup)
+    await message.reply("Murojaatingizga bog'liq foto yoki video yuklang", reply_markup=markup)
 
 
 
