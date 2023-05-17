@@ -1,13 +1,11 @@
 import logging
 import random
 import os
-import aiogram.utils.markdown as md
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import ParseMode
 from aiogram.utils import executor
 from config import BOT_TOKEN, BOT_GROUP
 
@@ -24,7 +22,6 @@ def generate_image_name():
     return text
 
 bot = Bot(token=API_TOKEN)
-print("STARTED 27 LINE BOT.PY")
 # For example use simple MemoryStorage for Dispatcher.
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
@@ -35,6 +32,7 @@ class Form(StatesGroup):
     name = State()  # Will be represented in storage as 'Form:name'
     surname = State()  # Will be represented in storage as 'Form:surname'
     phone = State() # Will be represented in storage as 'Form:phone'
+    address = State() # Will be represented in storage as 'Form:address'
     image = State()  # Will be represented in storage as 'Form:image'
     confirm = State() # Will be represented in storage as 'Form:confirm'
 
@@ -102,8 +100,39 @@ async def process_phone(message: types.Message, state: FSMContext):
         data['phone'] = message.text
 
     await Form.next()
-    await message.reply("Tanlov uchun tayyorlagan materialingizni yuboring.")
+    await message.reply("Yashash manzilingiz?")
 
+
+@dp.message_handler(state=Form.address)
+async def process_address(message: types.Message, state: FSMContext):
+    """
+    Process user address
+    """
+    async with state.proxy() as data:
+        data['address'] = message.text
+
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    button = types.KeyboardButton(text='Rasm yoki Video yoq 🚫')
+    markup.add(button)
+    await Form.next()
+    await message.reply("📸Rasm yoki 🎞Video yuklang", reply_markup=markup)
+
+@dp.message_handler(state=Form.image)
+async def process_not_exist(message: types.Message, state: FSMContext):
+    """
+    Process File or Image that does not exis
+    """
+    async with state.proxy() as data:
+        data['detail'] = "Mavjud emas"
+        markup = types.InlineKeyboardMarkup(row=2)
+        button1 = types.InlineKeyboardButton(text='Ha', callback_data='yes')
+        button2 = types.InlineKeyboardButton(text='Yoq', callback_data='no')
+        msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}\nUshbu ma'lumotlar to'grimi?"
+        markup.add(button1)
+        markup.add(button2)
+        await bot.send_message(message.chat.id, msg, reply_markup=markup)
+    await Form.next()
+    
 
 @dp.message_handler(content_types=['photo'], state=Form.image)
 async def process_image(message: types.Message, state: FSMContext):
@@ -118,12 +147,8 @@ async def process_image(message: types.Message, state: FSMContext):
         unique_name = generate_image_name() + '.png'
         await message.photo[-1].download(unique_name)
         # And send message
-        msg = f"""
-        Ushbu ma'lumotlar to'grimi?
-        """
-        await bot.send_photo(message.chat.id, open(unique_name, 'rb'), f"{data['name']}\n{data['surname']}")
-        await bot.send_message(message.chat.id, f"{data['phone']}")
-        await bot.send_message(message.chat.id, msg, reply_markup=markup)
+        msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}"
+        await bot.send_photo(message.chat.id, open(unique_name, 'rb'), msg, reply_markup=markup)
         if os.path.exists(unique_name):
             os.remove(unique_name)
     # Form next
@@ -131,7 +156,7 @@ async def process_image(message: types.Message, state: FSMContext):
     # await state.finish()
 
 @dp.message_handler(content_types=['video'], state=Form.image)
-async def process_image(message: types.Message, state: FSMContext):
+async def process_video(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['video'] = message.video.file_id
         # Remove keyboard
@@ -145,12 +170,8 @@ async def process_image(message: types.Message, state: FSMContext):
         file = await bot.get_file(file_id) # Get file path
         await bot.download_file(file.file_path, unique_name)
         # And send message
-        msg = f"""
-        Ushbu ma'lumotlar to'grimi?
-        """
-        await bot.send_video(message.chat.id, open(unique_name, 'rb'), f"{data['name']}\n{data['surname']}")
-        await bot.send_message(message.chat.id, f"{data['phone']}")
-        await bot.send_message(message.chat.id, msg, reply_markup=markup)
+        msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}\nUshbu ma'lumotlar to'grimi?"
+        await bot.send_video(message.chat.id, open(unique_name, 'rb'), msg, reply_markup=markup)
         if os.path.exists(unique_name):
             os.remove(unique_name)
     # Form next
@@ -164,6 +185,7 @@ async def process_confirm(call: types.CallbackQuery, state: FSMContext):
         async with state.proxy() as data:
             image = data.get('image', None)
             video = data.get('video', None)
+            markup = types.ReplyKeyboardRemove()
             if image:
                 unique_name = generate_image_name() + '.png'
                 image = data['image']
@@ -171,13 +193,10 @@ async def process_confirm(call: types.CallbackQuery, state: FSMContext):
                 file_path = file.file_path
                 await bot.download_file(file_path, unique_name)
                 # group
-                await bot.send_photo(BOT_GROUP, open(unique_name, 'rb'), f"{data['name']}\n{data['surname']}")
-                await bot.send_message(BOT_GROUP, f"{data['phone']}")
-                # other
-                await bot.send_photo("5149289550", open(unique_name, 'rb'), f"{data['name']}\n{data['surname']}")
-                await bot.send_message("5149289550", f"{data['phone']}")
+                msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}"
+                await bot.send_photo(BOT_GROUP, open(unique_name, 'rb'), msg)
                 # client
-                await bot.send_message(call.from_user.id, "🥳 Muvaffaqiyatli yuborildi !!!")
+                await bot.send_message(call.from_user.id, "🥳 Muvaffaqiyatli yuborildi !!!", reply_markup=markup)
                 if os.path.exists(unique_name):
                     os.remove(unique_name)
                 await state.finish()
@@ -188,18 +207,23 @@ async def process_confirm(call: types.CallbackQuery, state: FSMContext):
                 file_path = file.file_path
                 await bot.download_file(file_path, unique_name)
                 # group
-                await bot.send_video(BOT_GROUP, open(unique_name, 'rb'), f"{data['name']}\n{data['surname']}")
-                await bot.send_message(BOT_GROUP, f"{data['name']}\n{data['surname']}\n{data['phone']}")
-                # other
-                await bot.send_video("5149289550", open(unique_name, 'rb'), f"{data['name']}\n{data['surname']}")
-                await bot.send_message("5149289550", f"{data['name']}\n{data['surname']}\n{data['phone']}")
+                msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}"
+                await bot.send_video(BOT_GROUP, open(unique_name, 'rb'), msg)
                 # client
-                await bot.send_message(call.from_user.id, "🥳 Muvaffaqiyatli yuborildi !!!")
+                await bot.send_message(call.from_user.id, "🥳 Muvaffaqiyatli yuborildi !!!", reply_markup=markup)
+                # finish
                 if os.path.exists(unique_name):
                     os.remove(unique_name)
                 await state.finish()
             else:
-                await bot.send_message(call.from_user.id, "Hatolik yuz berdi keginroq urinib ko'ring.")
+                # group
+                msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}\nRasm yoki Video: {data['detail']}"
+                await bot.send_message(BOT_GROUP, msg)
+                # client
+                await bot.send_message(call.from_user.id, "🥳 Muvaffaqiyatli yuborildi !!!", reply_markup=markup)
+                # finish
+                await state.finish()
+
     elif call.data == 'no':
         await state.finish()
         await bot.send_message(call.from_user.id, f"Royhatdan o'tkazish to'htatildi.\nQayta topshirish uchun /start")
