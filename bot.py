@@ -31,8 +31,10 @@ dp = Dispatcher(bot, storage=storage)
 class Form(StatesGroup):
     name = State()  # Will be represented in storage as 'Form:name'
     surname = State()  # Will be represented in storage as 'Form:surname'
+    age = State()  # Will be represented in storage as 'Form:age'
     phone = State() # Will be represented in storage as 'Form:phone'
     address = State() # Will be represented in storage as 'Form:address'
+    desc = State() # Will be represented in storage as 'Form:desc'
     image = State()  # Will be represented in storage as 'Form:image'
     confirm = State() # Will be represented in storage as 'Form:confirm'
 
@@ -46,7 +48,7 @@ async def cmd_start(message: types.Message):
     # Set state
     await Form.name.set()
 
-    await message.reply("Assalomu alaykyum, Ismingiz ?")
+    await message.reply("Assalomu alaykyum, Ismingiz?")
 
 
 # You can use state '*' if you need to handle all states
@@ -76,7 +78,7 @@ async def process_name(message: types.Message, state: FSMContext):
         data['name'] = message.text
 
     await Form.next()
-    await message.reply("Familyangiz ?")
+    await message.reply("Familyangiz?")
 
 
 @dp.message_handler(state=Form.surname)
@@ -88,7 +90,19 @@ async def process_surname(message: types.Message, state: FSMContext):
         data['surname'] = message.text
 
     await Form.next()
-    await message.reply("Telefon raqamingiz ?")
+    await message.reply("Yoshingiz?")
+
+
+@dp.message_handler(state=Form.age)
+async def process_age(message: types.Message, state: FSMContext):
+    """
+    Process user age
+    """
+    async with state.proxy() as data:
+        data['age'] = message.text
+
+    await Form.next()
+    await message.reply("Telefon raqamingiz?")
 
 
 @dp.message_handler(state=Form.phone)
@@ -111,11 +125,26 @@ async def process_address(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['address'] = message.text
 
+    markup = types.ReplyKeyboardRemove()
+    await Form.next()
+    await message.reply("Murojaatingiz", reply_markup=markup)
+
+
+@dp.message_handler(state=Form.desc)
+async def process_desc(message: types.Message, state: FSMContext):
+    """
+    Process user desc
+    """
+    async with state.proxy() as data:
+        data['desc'] = message.text
+
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     button = types.KeyboardButton(text='Rasm yoki Video yoq 🚫')
     markup.add(button)
     await Form.next()
     await message.reply("📸Rasm yoki 🎞Video yuklang", reply_markup=markup)
+
+
 
 @dp.message_handler(state=Form.image)
 async def process_not_exist(message: types.Message, state: FSMContext):
@@ -127,7 +156,7 @@ async def process_not_exist(message: types.Message, state: FSMContext):
         markup = types.InlineKeyboardMarkup(row=2)
         button1 = types.InlineKeyboardButton(text='Ha', callback_data='yes')
         button2 = types.InlineKeyboardButton(text='Yoq', callback_data='no')
-        msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}\nUshbu ma'lumotlar to'grimi?"
+        msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nYosh: {data['age']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}\nMurojaat: {data['desc']}\nUshbu ma'lumotlar to'grimi?"
         markup.add(button1)
         markup.add(button2)
         await bot.send_message(message.chat.id, msg, reply_markup=markup)
@@ -147,7 +176,7 @@ async def process_image(message: types.Message, state: FSMContext):
         unique_name = generate_image_name() + '.png'
         await message.photo[-1].download(unique_name)
         # And send message
-        msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}"
+        msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nYosh: {data['age']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}\nMurojaat: {data['desc']}\n Ushbu ma'lumotlar tog'rimi?"
         await bot.send_photo(message.chat.id, open(unique_name, 'rb'), msg, reply_markup=markup)
         if os.path.exists(unique_name):
             os.remove(unique_name)
@@ -170,7 +199,7 @@ async def process_video(message: types.Message, state: FSMContext):
         file = await bot.get_file(file_id) # Get file path
         await bot.download_file(file.file_path, unique_name)
         # And send message
-        msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}\nUshbu ma'lumotlar to'grimi?"
+        msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nYosh: {data['age']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}\nMurojaat: {data['desc']}\nUshbu ma'lumotlar to'grimi?"
         await bot.send_video(message.chat.id, open(unique_name, 'rb'), msg, reply_markup=markup)
         if os.path.exists(unique_name):
             os.remove(unique_name)
@@ -193,7 +222,7 @@ async def process_confirm(call: types.CallbackQuery, state: FSMContext):
                 file_path = file.file_path
                 await bot.download_file(file_path, unique_name)
                 # group
-                msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}"
+                msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nYosh: {data['age']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}\nMurojaat: {data['desc']}"
                 await bot.send_photo(BOT_GROUP, open(unique_name, 'rb'), msg)
                 # client
                 await bot.send_message(call.from_user.id, "🥳 Muvaffaqiyatli yuborildi !!!", reply_markup=markup)
@@ -207,7 +236,7 @@ async def process_confirm(call: types.CallbackQuery, state: FSMContext):
                 file_path = file.file_path
                 await bot.download_file(file_path, unique_name)
                 # group
-                msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}"
+                msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nYosh: {data['age']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}\nMurojaat: {data['desc']}"
                 await bot.send_video(BOT_GROUP, open(unique_name, 'rb'), msg)
                 # client
                 await bot.send_message(call.from_user.id, "🥳 Muvaffaqiyatli yuborildi !!!", reply_markup=markup)
@@ -217,7 +246,7 @@ async def process_confirm(call: types.CallbackQuery, state: FSMContext):
                 await state.finish()
             else:
                 # group
-                msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}\nRasm yoki Video: {data['detail']}"
+                msg = f"Ism: {data['name']}\nFamilya: {data['surname']}\nYosh: {data['age']}\nTelefon raqam: {data['phone']}\nManzil: {data['address']}\nMurojaat: {data['desc']}"
                 await bot.send_message(BOT_GROUP, msg)
                 # client
                 await bot.send_message(call.from_user.id, "🥳 Muvaffaqiyatli yuborildi !!!", reply_markup=markup)
